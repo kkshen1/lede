@@ -5,13 +5,18 @@
 # Copyright (C) 2019 KFERMercer <KFER.Mercer@gmail.com>
 # 
 # <https://github.com/KFERMercer/OpenWrt-CI>
-# 
+#
 
 name: OpenWrt-CI
 
 on:
-  schedule:
-    - cron: 0 20 * * *
+  push:
+    branches: 
+      - master
+  # schedule:
+  #   - cron: 0 20 * * *
+  # release:
+  #   types: [published]
 
 jobs:
 
@@ -20,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@master
         with:
@@ -36,8 +42,17 @@ jobs:
           sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
           sudo -E apt-get -y autoremove --purge
           sudo -E apt-get clean
+      
+          
+          
+      - name: 加载serverchan
+        run: |
+          cd package
+          mkdir openwrt-packages
+          cd openwrt-packages
+          git clone https://github.com/KFERMercer/luci-app-serverchan.git
+          
 
-          # 利用挂载在 /mnt/ 的 14G 额外空间:
           # sudo mkdir -p -m 777 /mnt/openwrt/bin /mnt/openwrt/build_dir/host /mnt/openwrt/build_dir/hostpkg /mnt/openwrt/dl /mnt/openwrt/feeds /mnt/openwrt/staging_dir
           # ln -s /mnt/openwrt/bin ./bin
           # mkdir -p ./build_dir/host && ln -s /mnt/openwrt/build_dir/host ./build_dir/host
@@ -54,12 +69,216 @@ jobs:
           ./scripts/feeds install -a
 
       - name: Generate configuration file
-        run: make defconfig
+        run: |
+          rm -f ./.config*
+          touch ./.config
+
+          #
+          # ========================固件定制部分========================
+          # 
+
+          # 
+          # 如果不对本区块做出任何编辑, 则生成默认配置固件. 
+          # 
+
+          # 以下为定制化固件选项和说明:
+          #
+
+          #
+          # 有些插件/选项是默认开启的, 如果想要关闭, 请参照以下示例进行编写:
+          # 
+          #          =========================================
+          #         |  # 取消编译VMware镜像:                   |
+          #         |  cat >> .config <<EOF                   |
+          #         |  # CONFIG_VMDK_IMAGES is not set        |
+          #         |  EOF                                    |
+          #          =========================================
+          #
+
+          # 
+          # 以下是一些提前准备好的一些插件选项.
+          # 直接取消注释相应代码块即可应用. 不要取消注释代码块上的汉字说明.
+          # 如果不需要代码块里的某一项配置, 只需要删除相应行.
+          #
+          # 如果需要其他插件, 请按照示例自行添加.
+          # 注意, 只需添加依赖链顶端的包. 如果你需要插件 A, 同时 A 依赖 B, 即只需要添加 A.
+          # 
+          # 无论你想要对固件进行怎样的定制, 都需要且只需要修改 EOF 回环内的内容.
+          # 
+
+          # 编译x64固件:
+          cat >> .config <<EOF
+          CONFIG_TARGET_x86=y
+          CONFIG_TARGET_x86_64=y
+          CONFIG_TARGET_x86_64_Generic=y
+          CONFIG_EFI_IMAGES=y
+          # CONFIG_GRUB_CONSOLE is not set
+          # CONFIG_GRUB_IMAGES is not set
+          CONFIG_LIBCURL_COOKIES=y
+          CONFIG_LIBCURL_FILE=y
+          CONFIG_LIBCURL_FTP=y
+          CONFIG_LIBCURL_HTTP=y
+          CONFIG_LIBCURL_NO_SMB="!"
+          CONFIG_LIBCURL_OPENSSL=y
+          CONFIG_LIBCURL_PROXY=y
+          CONFIG_OPENSSL_WITH_COMPRESSION=y
+          CONFIG_OPENSSL_WITH_DTLS=y
+          CONFIG_OPENSSL_WITH_EC2M=y
+          CONFIG_OPENSSL_WITH_NPN=y
+          # CONFIG_PACKAGE_boost-chrono is not set
+          # CONFIG_PACKAGE_boost-random is not set
+          CONFIG_PACKAGE_brook=y
+          CONFIG_PACKAGE_ca-bundle=y
+          CONFIG_PACKAGE_chinadns-ng=y
+          CONFIG_PACKAGE_curl=y
+          CONFIG_PACKAGE_dns2socks=y
+          CONFIG_PACKAGE_grub2-efi=y
+          CONFIG_PACKAGE_haproxy=y
+          # CONFIG_PACKAGE_icu is not set
+          # CONFIG_PACKAGE_iptables-mod-ipsec is not set
+          CONFIG_PACKAGE_iputils-arping=y
+          CONFIG_PACKAGE_kcptun-client=y
+          # CONFIG_PACKAGE_kmod-crypto-cbc is not set
+          # CONFIG_PACKAGE_kmod-crypto-deflate is not set
+          # CONFIG_PACKAGE_kmod-crypto-des is not set
+          # CONFIG_PACKAGE_kmod-crypto-echainiv is not set
+          # CONFIG_PACKAGE_kmod-crypto-hmac is not set
+          # CONFIG_PACKAGE_kmod-crypto-md5 is not set
+          # CONFIG_PACKAGE_kmod-crypto-rng is not set
+          # CONFIG_PACKAGE_kmod-crypto-sha256 is not set
+          # CONFIG_PACKAGE_kmod-crypto-wq is not set
+          # CONFIG_PACKAGE_kmod-gre is not set
+          # CONFIG_PACKAGE_kmod-ipsec is not set
+          # CONFIG_PACKAGE_kmod-ipt-ipsec is not set
+          # CONFIG_PACKAGE_kmod-iptunnel6 is not set
+          # CONFIG_PACKAGE_kmod-tun is not set
+          # CONFIG_PACKAGE_libbz2 is not set
+          CONFIG_PACKAGE_libcurl=y
+          # CONFIG_PACKAGE_libdb47 is not set
+          # CONFIG_PACKAGE_libdouble-conversion is not set
+          # CONFIG_PACKAGE_libexpat is not set
+          # CONFIG_PACKAGE_libffi is not set
+          # CONFIG_PACKAGE_libgdbm is not set
+          # CONFIG_PACKAGE_libgmp is not set
+          CONFIG_PACKAGE_libltdl=y
+          # CONFIG_PACKAGE_libminiupnpc is not set
+          # CONFIG_PACKAGE_libnatpmp is not set
+          # CONFIG_PACKAGE_libpcre2-16 is not set
+          # CONFIG_PACKAGE_libsqlite3 is not set
+          # CONFIG_PACKAGE_libxml2 is not set
+          # CONFIG_PACKAGE_libzstd is not set
+          # CONFIG_PACKAGE_luci-app-accesscontrol is not set
+          # CONFIG_PACKAGE_luci-app-autoreboot is not set
+          CONFIG_PACKAGE_luci-app-fileassistant=y
+          # CONFIG_PACKAGE_luci-app-filetransfer is not set
+          # CONFIG_PACKAGE_luci-app-ipsec-vpnd is not set
+          # CONFIG_PACKAGE_luci-app-nlbwmon is not set
+          CONFIG_PACKAGE_luci-app-adbyby-plus=y
+          CONFIG_PACKAGE_luci-app-passwall=y
+          CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Brook=y
+          CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks=y
+          CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_socks=y
+          CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_socks=y
+          CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan=y
+          CONFIG_PACKAGE_luci-app-passwall_INCLUDE_kcptun=y
+          # CONFIG_PACKAGE_luci-app-pptp-server is not set
+          # CONFIG_PACKAGE_luci-app-qbittorrent is not set
+          CONFIG_PACKAGE_luci-app-serverchan=y
+          # CONFIG_PACKAGE_luci-app-ssr-plus is not set
+          # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks is not set
+          # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Server is not set
+          # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Socks is not set
+          # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Trojan is not set
+          # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_V2ray is not set
+          # CONFIG_PACKAGE_luci-app-v2ray-server is not set
+          # CONFIG_PACKAGE_luci-app-vsftpd is not set
+          CONFIG_PACKAGE_luci-app-watchcat=y
+          # CONFIG_PACKAGE_luci-app-xlnetacc is not set
+          # CONFIG_PACKAGE_luci-app-zerotier is not set
+          CONFIG_PACKAGE_luci-i18n-watchcat-zh-cn=y
+          CONFIG_PACKAGE_luci-theme-argon=y
+          CONFIG_PACKAGE_luci-theme-argon-dark-mod=y
+          CONFIG_PACKAGE_luci-theme-argon-light-mod=y
+          CONFIG_PACKAGE_luci-theme-bootstrap-mod=y
+          CONFIG_PACKAGE_luci-theme-material=y
+          CONFIG_PACKAGE_luci-theme-netgear=y
+          CONFIG_PACKAGE_luci-theme-netgear-mc=y
+          # CONFIG_PACKAGE_pptpd is not set
+          # CONFIG_PACKAGE_python is not set
+          # CONFIG_PACKAGE_python-base is not set
+          # CONFIG_PACKAGE_python-codecs is not set
+          # CONFIG_PACKAGE_python-compiler is not set
+          # CONFIG_PACKAGE_python-ctypes is not set
+          # CONFIG_PACKAGE_python-db is not set
+          # CONFIG_PACKAGE_python-decimal is not set
+          # CONFIG_PACKAGE_python-distutils is not set
+          # CONFIG_PACKAGE_python-email is not set
+          # CONFIG_PACKAGE_python-gdbm is not set
+          # CONFIG_PACKAGE_python-light is not set
+          # CONFIG_PACKAGE_python-logging is not set
+          # CONFIG_PACKAGE_python-multiprocessing is not set
+          # CONFIG_PACKAGE_python-ncurses is not set
+          # CONFIG_PACKAGE_python-openssl is not set
+          # CONFIG_PACKAGE_python-pydoc is not set
+          # CONFIG_PACKAGE_python-sqlite3 is not set
+          # CONFIG_PACKAGE_python-unittest is not set
+          # CONFIG_PACKAGE_python-xml is not set
+          # CONFIG_PACKAGE_qBittorrent is not set
+          # CONFIG_PACKAGE_qt5-core is not set
+          # CONFIG_PACKAGE_qt5-network is not set
+          # CONFIG_PACKAGE_qt5-xml is not set
+          # CONFIG_PACKAGE_rblibtorrent is not set
+          CONFIG_PACKAGE_resolveip=y
+          CONFIG_PACKAGE_shadowsocks-libev-ss-local=y
+          # CONFIG_PACKAGE_shadowsocksr-libev-server is not set
+          # CONFIG_PACKAGE_strongswan is not set
+          # CONFIG_PACKAGE_strongswan-charon is not set
+          # CONFIG_PACKAGE_strongswan-ipsec is not set
+          # CONFIG_PACKAGE_strongswan-minimal is not set
+          # CONFIG_PACKAGE_strongswan-mod-aes is not set
+          # CONFIG_PACKAGE_strongswan-mod-gmp is not set
+          # CONFIG_PACKAGE_strongswan-mod-hmac is not set
+          # CONFIG_PACKAGE_strongswan-mod-kernel-netlink is not set
+          # CONFIG_PACKAGE_strongswan-mod-nonce is not set
+          # CONFIG_PACKAGE_strongswan-mod-pubkey is not set
+          # CONFIG_PACKAGE_strongswan-mod-random is not set
+          # CONFIG_PACKAGE_strongswan-mod-sha1 is not set
+          # CONFIG_PACKAGE_strongswan-mod-socket-default is not set
+          # CONFIG_PACKAGE_strongswan-mod-stroke is not set
+          # CONFIG_PACKAGE_strongswan-mod-updown is not set
+          # CONFIG_PACKAGE_strongswan-mod-x509 is not set
+          # CONFIG_PACKAGE_strongswan-mod-xauth-generic is not set
+          # CONFIG_PACKAGE_strongswan-mod-xcbc is not set
+          CONFIG_PACKAGE_tcping=y
+          CONFIG_PACKAGE_unzip=y
+          # CONFIG_PACKAGE_vsftpd-alt is not set
+          CONFIG_PACKAGE_watchcat=y
+          # CONFIG_PACKAGE_zerotier is not set
+          # CONFIG_VMDK_IMAGES is not set
+          CONFIG_PACKAGE_kmod-nf-conntrack-netlink=y
+          CONFIG_PACKAGE_luci-lib-fs=y
+          CONFIG_PACKAGE_nlbwmon=y
+
+
+          EOF
+
+       
+
+ 
+
+
+          # 
+          # ========================固件定制部分结束========================
+          # 
+
+          sed -i 's/^[ \t]*//g' ./.config
+          make defconfig
 
       - name: Make download
         run: |
           make download -j8
-          find dl -size -1024c -exec rm -f {} \;
+          find ./dl/ -size -1024c -exec rm -f {} \;
+          df -h
 
       - name: Compile firmware
         run: |
