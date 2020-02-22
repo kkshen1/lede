@@ -254,7 +254,7 @@ jobs:
           CONFIG_PACKAGE_tcping=y
           CONFIG_PACKAGE_unzip=y
           # CONFIG_PACKAGE_vsftpd-alt is not set
-          CONFIG_PACKAGE_watchcat=y
+          # CONFIG_PACKAGE_watchcatis not set
           # CONFIG_PACKAGE_zerotier is not set
           # CONFIG_VMDK_IMAGES is not set
           CONFIG_PACKAGE_kmod-nf-conntrack-netlink=y
